@@ -11,10 +11,38 @@ socket_set_option($sock, SOL_SOCKET, SO_REUSEADDR, 1);
 socket_bind($sock, "localhost", 6379);
 socket_listen($sock, 5);
 
-$client = socket_accept($sock);
-while (($data = socket_read($client, 1024)) !== false && $data !== "") {
-    socket_write($client, "+PONG\r\n");
+socket_set_nonblock($sock);
+
+$clients = [];
+
+while (true) {
+    $read = array_merge([$sock], $clients);
+    $write = null;
+    $except = null;
+
+    if (socket_select($read, $write, $except, null) < 1) {
+        continue;
+    }
+
+    foreach ($read as $readable) {
+        if ($readable === $sock) {
+            $client = socket_accept($sock);
+            if ($client !== false) {
+                socket_set_nonblock($client);
+                $clients[(int) $client] = $client;
+            }
+            continue;
+        }
+
+        $data = @socket_read($readable, 1024);
+        if ($data === false || $data === "") {
+            unset($clients[(int) $readable]);
+            socket_close($readable);
+            continue;
+        }
+
+        socket_write($readable, "+PONG\r\n");
+    }
 }
-socket_close($client);
 
 socket_close($sock);
