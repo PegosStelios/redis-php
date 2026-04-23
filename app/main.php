@@ -12,7 +12,9 @@ socket_bind($sock, "localhost", 6379);
 socket_listen($sock, 5);
 
 $client = socket_accept($sock);
-socket_write($client, "+PONG\r\n");
+while (($data = socket_read($client, 1024)) !== false && $data !== "") {
+    socket_write($client, "+PONG\r\n");
+}
 socket_close($client);
 
 socket_close($sock);
