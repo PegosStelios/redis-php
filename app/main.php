@@ -29,14 +29,14 @@ while (true) {
             $client = socket_accept($sock);
             if ($client !== false) {
                 socket_set_nonblock($client);
-                $clients[(int) $client] = $client;
+                $clients[spl_object_id($client)] = $client;
             }
             continue;
         }
 
         $data = @socket_read($readable, 1024);
         if ($data === false || $data === "") {
-            unset($clients[(int) $readable]);
+            unset($clients[spl_object_id($readable)]);
             socket_close($readable);
             continue;
         }
